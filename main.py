@@ -10,13 +10,13 @@ META = './files/metadata.txt'
 tables_list = {}            #dictionary of table name to list of columns it has
 tables_needed = {}
 
-AGG = [ 'max', 'sum', 'avg', 'min']
+AGG = [ 'max', 'min', 'avg','sum']
 
 cartesianTable = []             #joined table of cartesian product of all rows of tables being used in the query
                 
 tables = {}                     #dictionary of table name to Table object with name, cols and data in cols
                 #list of all columns in order of cartesian product for all tables
-
+temp_col_name=[]
 
 class Table:
     def __init__(self, name, cols, data):
@@ -74,7 +74,7 @@ def get_data_columns(table_name):
 def check_col(col):
     global tables
     table_names=list(tables.keys())
-    print(" table names ",table_names)
+    # print(" table names ",table_names)
     found=0
     for i in table_names:
         if col in tables[i].columns:
@@ -96,9 +96,9 @@ def fullJoin():
     for i in range(1, len(table_l)):
         cartesianTable = [[*row1, *row2] for row1 in cartesianTable for row2 in tables[table_l[i]].data]
     
-    print("cartesianTable\n")
-    for row in cartesianTable:
-        print((str(row)))
+    # print("cartesianTable\n")
+    # for row in cartesianTable:
+    #     print((str(row)))
   
 
 def findColNum(arg,final_cols):
@@ -112,6 +112,7 @@ def findColNum(arg,final_cols):
             return colInd
   
 
+
 def getTablename(col):
     global tables
 
@@ -120,126 +121,327 @@ def getTablename(col):
         if col in tables[i].columns:
             return str(i)
 
-def checkAggregate(query_list):
-    print(" query list ",query_list)
-    #aggregate only on single column
-    temp = -1
+def checkAggregate(agg_part):
+    global AGG
+    # print(" query list ",agg_part)
+   
+    col_start = -1
     agg = -1
-    for i in range(len(query_list)):
-        x = query_list[i]
-        temp = x.find("(")
-        if temp > -1:
-            agg = x[0:temp]
-            agg = agg.lower()
-            if agg == "max":
-                agg = 1
-            elif agg == "min":
-                agg = 2
-            elif agg == "avg":
-                agg = 3
-            elif agg == "sum":
-                agg = 4   
-            else:
-                agg = -1
-            query_list[i] = x[temp+1:-1]
+    col_name = re.search(r"\(([A-Za-z0-9_]+)\)", agg_part[0])
+    # if(agg_part > 1)
+    # print("col_name  ",agg_part)
+
+    for i in range(len(AGG)):
+        if AGG[i] in agg_part[0].lower():
+            agg=i+1
+
+    if(agg !=-1) :
+        agg_part[0]=col_name.group(1) 
+            
+     
+    # print("agg ",agg)      
+          
+    return agg, agg_part
+
+def operator_evaluate(operand1,operand2,identifier1,identifier2,row_no,operator):
+    global cartesianTable
+
+    if identifier1 == -1:     
+        if identifier2 == -1:
+            pass       #argument 1 and 2 are numbers
+        else:         
+            operand2 = cartesianTable[row_no][identifier2]
+    else:              
+        operand1 = cartesianTable[row_no][identifier1]
+        if identifier2 == -1:
+            pass
+        else:
+            operand2 = cartesianTable[row_no][identifier2]  #argument 1 and 2  col
+
+    if operator == "=":
+        return operand1 == operand2
+    elif operator == ">":
+        return operand1 > operand2
+    elif operator == ">=":
+        return operand1 >= operand2
+    elif operator == "<":
+        return operand1 < operand2
+    elif operator == "<=":
+        return operand1 <= operand2        
+
+
+
+            
+def preEvaluate(cond,final_cols):
+    global cartesianTable
+    print(" cond " ,cond)
+    operator = cond[1]
+
+    ind1,ind2 = -1,-1
+    arg = cond[0]
+    no = 0
+    try:
+        arg = int(arg)
+    except:
+        check_col(arg)
+        ind1 = findColNum(arg,final_cols)
+        print("index 1" ,ind1)
+
+    arg2 = cond[2]
+    try:
+        arg2 = int(arg2)
+    except:
+        check_col(arg2)
+        ind2 = findColNum(arg2,final_cols)
+        print("index 2" ,ind2)
+
+
+    finalData = []
+    finalRows = []
+    for i in range(len(cartesianTable)):
+        bool_var = operator_evaluate(arg, arg2, ind1,ind2, i,operator)
+        # print (bool_var)
+        if bool_var:
+            finalData.append(cartesianTable[i])
+            finalRows.append(i)
+    print (finalRows)
+    return finalRows
+
+
+def checkJoin(cond,final_cols):
+    print("\n\n ")
+    print("check join condition ",cond)
+    redundant = []
+    operator = cond[1]
+    ind1,ind2 = -1,-1
+    arg = cond[0]
+    try:
+        arg = int(arg)
+    except:
+        ind1 = findColNum(arg,final_cols)
+
+    arg2 = cond[2]
+    try:
+        arg2 = int(arg2)
+    except:
+        ind2 = findColNum(arg2,final_cols)
+        if operator == "=":
+            redundant.append(ind2)
+            # print (ind2 )
+    print("redundant",redundant)        
+    return redundant
+
+
+
+
+def get_condition_array(condition,index):
+
+    beg = 0
+    condition_array=[]
+
+    if index != 0 :
+
+        temp_c=condition[slice(beg,index)]
+         # print(" temp c" ,"".join(temp_c))
+        condition_array.append("".join(temp_c))
+
+        beg = index + 1
+        temp_c=condition[slice(beg,len(condition))]
+        condition_array.append("".join(temp_c))
+
+    else:
+        temp_c=condition
+        print(" temp c" ,"".join(temp_c))
+        condition_array.append("".join(temp_c))
+
+       
+           
+           
     
-    print(query_list)        
-    return agg, query_list
+
+    operator_array=[">=","<=",">","<","="]
+
+    for i in range(len(condition_array)):
+        temp = [0,0,0]
+
+        for op in operator_array:
+            print(" c-op ",op)
+            if condition_array[i].find(op) !=-1 :
+                cols=condition_array[i].replace(op,",").split(",")
+                # print("cols ",cols)
+                temp[0],temp[1],temp[2]=cols[0],op,cols[1]
+                condition_array[i]=temp;
+                break
+
+
+       
+            
+    # print("condition_array[i] ",condition_array[i])
+    return condition_array
+   
+ 
+def whereQuery(condition,final_cols):
+    #split on basis of and and or conditions
+    
+    condition = condition.split()[1:]
+    
+    #validate condirion 
+
+    print("condition ",condition)
+
+   
+    condition_array = []
+    two_cond=0
+
+    for c in range(len(condition)):
+        if condition[c].lower() == "or" :
+            two_cond = 1
+            condition_array=get_condition_array(condition,c)
+
+            print("condition_array ",condition_array)
+
+            res1 = set(preEvaluate(condition_array[0],final_cols))
+
+            res2 = set(preEvaluate(condition_array[1],final_cols))
+            print("res1 " ,res1)
+            res = res1 | res2
+            print("res2 " ,res2)
+
+
+            red1 = set(checkJoin(condition_array[0],final_cols))
+            red2 = set(checkJoin(condition_array[1],final_cols))
+            print("red1 " ,red1)
+            print("red2 " ,red2)
+
+            red = red1 | red2
+            break
+
+
+        elif condition[c] == "and" or condition[c] == "AND":
+            two_cond = 1
+            condition_array=get_condition_array(condition,c)
+
+            print("condition_array ",condition_array)
+            
+
+            res1 = set(preEvaluate(condition_array[0],final_cols))
+            res2 = set(preEvaluate(condition_array[1],final_cols))
+            res = res1 & res2
+
+            red1 = set(checkJoin(condition_array[0],final_cols))
+            red2 = set(checkJoin(condition_array[1],final_cols))
+            red = red1 | red2
+            break
+
+    if two_cond == 0 :
+
+        condition_array=get_condition_array(condition,0)
+        print("c_aarray ",condition_array)
+
+      
+        res = set(preEvaluate(condition_array[0],final_cols))
+        red = checkJoin(condition_array[0],final_cols)
+           
+        
+    return res,red
+
 
 
 def projectColumns(columns_to_display, table_cols, distinct, redundant,final_cols):
     global cartesianTable
     global tables
     global tables_list
+    global temp_col_name
 
-    col_ind = []
-    col_name = []
+    index_of_col = []
+    name_of_col = []
+    temp_name_of_col=[]
 
     
     columns_to_display = columns_to_display.replace(",", " ")
     columns_to_display = columns_to_display.split()
-    # if(len(columns_to_display) >2) :
-    #     columns_to_display=columns_to_display[:-1]
-
-    
-    print ("query colums in project colms",columns_to_display)
+ 
+    # print ("query colums in project colms",columns_to_display)
 
     agg,  columns_to_display  = checkAggregate(columns_to_display)
 
     for i in range(len(columns_to_display)):
         check_col(columns_to_display[i])
         temp = findColNum(columns_to_display[i],final_cols)
-        print("temp ",temp)
+        # print("temp ",temp)
 
         if temp in redundant:
             # print (redundant, temp)
             continue
-        col_ind.append(temp)
-        # print (col_ind)
-        col_name.append(final_cols[col_ind[-1]])
-        # print("col name ",col_name)
-        # print("col index ",col_ind)
+        index_of_col.append(temp)
+        # print (index_of_col)
+        name_of_col.append(final_cols[index_of_col[-1]])
+        temp_name_of_col.append(temp_col_name[index_of_col[-1]])
+        # print("col name ",name_of_col)
+        # print("col index ",index_of_col)
     if distinct:
-        disp_set = set()
+        diaplay_data = set()
 
         for i in range(len(cartesianTable)):
             row = ""
             if i in table_cols:
-                for j in range(len(col_ind)):
-                    if j == len(col_ind) - 1:
-                        row += str(cartesianTable[i][col_ind[j]])
+                for j in range(len(index_of_col)):
+                    if j == len(index_of_col) - 1:
+                        row += str(cartesianTable[i][index_of_col[j]])
                     else:
-                        row += str(cartesianTable[i][col_ind[j]]) + ", "
+                        row += str(cartesianTable[i][index_of_col[j]]) + ", "
             if row != "":
-                disp_set.add(row)
-    elif len(columns_to_display) > 1 :
-        disp_set = []
+                diaplay_data.add(row)
+    else:
+        diaplay_data = []
 
         for i in range(len(cartesianTable)):
             row = ""
             if i in table_cols:
-                for j in range(len(col_ind)):
-                    if j == len(col_ind) - 1:
-                        row += str(cartesianTable[i][col_ind[j]])
+                for j in range(len(index_of_col)):
+                    if j == len(index_of_col) - 1:
+                        row += str(cartesianTable[i][index_of_col[j]])
                     else:
-                        row += str(cartesianTable[i][col_ind[j]]) + ", "
+                        row += str(cartesianTable[i][index_of_col[j]]) + ", "
             if row != "":
-                disp_set.append(row)
+                diaplay_data.append(row)
 
                  
-    else:
-        disp_set = []
-        k = list(tables.keys())
-        # tab = col_name[0].split(".")[0]
-        col = col_name[0]
-        tab=getTablename(col)
+    # else:
+    #     diaplay_data = []
+    #     k = list(tables.keys())
+    #     # tab = name_of_col[0].split(".")[0]
+    #     col = name_of_col[0]
+    #     tab=getTablename(col)
 
-        data = tables[tab].data
-        ind = 0
-        for i in range(len(tables_list[tab])):
-            if tables_list[tab][i] == str(col):
-                ind = i
+    #     data = tables[tab].data
+    #     ind = 0
+    #     for i in range(len(tables_list[tab])):
+    #         if tables_list[tab][i] == str(col):
+    #             ind = i
 
-        for i in range(len(data)):
-            disp_set.append(str(data[i][ind]))
+    #     for i in range(len(data)):
+    #         diaplay_data.append(str(data[i][ind]))
 
+    # print(" display data ",diaplay_data)
     if agg == -1:
-        print (str(col_name)[1:-1])
-        for i in disp_set:
+        print (str(temp_name_of_col)[1:-1])
+        for i in diaplay_data:
             print (i)
 
+
     elif agg == 1:
-        print ("max(" + str(col_name)[1:-1] + ")")
-        print (max(disp_set))
+        print ("max(" + str(name_of_col)[1:-1] + ")")
+        print (max(diaplay_data))
     elif agg == 2:
-        print ("min(" + str(col_name)[1:-1] + ")")
-        print (min(disp_set))
+        print ("min(" + str(name_of_col)[1:-1] + ")")
+        print (min(diaplay_data))
     elif agg == 3:
-        print ("avg(" + str(col_name)[1:-1] + ")")
-        print (reduce(lambda x,y:float(x) + float(y), disp_set)/float(len(disp_set)))
+        print ("avg(" + str(name_of_col)[1:-1] + ")")
+        print (reduce(lambda x,y:float(x) + float(y), diaplay_data)/float(len(diaplay_data)))
     elif agg == 4:
-        print ("sum(" + str(col_name)[1:-1] + ")")
-        print (reduce(lambda x,y:float(x) + float(y), disp_set))
+        print ("sum(" + str(name_of_col)[1:-1] + ")")
+        print (reduce(lambda x,y:float(x) + float(y), diaplay_data))
     
 
 def selectQuery(querybits):
@@ -259,7 +461,7 @@ def selectQuery(querybits):
        
 
     curr_tables = re.findall("[\'\w]+", curr_tables)
-    print ("curr_tables ",curr_tables)
+    # print ("curr_tables ",curr_tables)
 
     #getting the tables data from csv files to store in program
 
@@ -276,27 +478,36 @@ def selectQuery(querybits):
    
     #create big cartesian table
     final_cols=[]
-
+    global temp_col_name
     table_l = list(tables.keys())
     for i in range(len(table_l)):
         tab = str(table_l[i])
         for j in range(len(tables_list[tab])):
-            # colname = tab + "." + str(tables_list[tab][j])
+            colname = tab + "." + str(tables_list[tab][j])
+            temp_col_name.append(colname)
             colname=str(tables_list[tab][j])
             final_cols.append(colname)
-    print("final  ",final_cols)
+    # print("final  ",final_cols)
            
     fullJoin()
     
 
     res = [x for x in range(len(cartesianTable))]
-    print('result ',res)
+    # print('result ',res)
     redundant = set()
-    # #check for where conditions
-    # last = querybits[-1]
-    # temp = last.split()
-    # # if (temp[0] in  ["where", "WHERE"]):
-    # #     res, redundant = whereQuery(querybits)
+   
+    #first check for where query
+    for i in querybits:
+        if  i.split()[0].lower() in ["where"] :
+             res, redundant = whereQuery(i,final_cols)
+
+     
+
+    print(" results ",res)
+
+    #then check for group query
+
+    
 
     #project columns
     if columns_to_display == "*":
@@ -309,7 +520,7 @@ def selectQuery(querybits):
                     columns_to_display += ( str(tables_list[x][j]) + ",")
 
 
-    print (columns_to_display)
+    # print (columns_to_display)
     projectColumns(columns_to_display, res, dist, redundant,final_cols)
 
 
@@ -334,7 +545,7 @@ def processQuery(raw_query):
             querybits.append(str(cmd))
 
         if querybits[0].lower() in ["select"]:           
-            print("querybits ",querybits)            
+            # print("querybits ",querybits)            
             selectQuery(querybits)
         else:
             print ("Incorrect Query type")
