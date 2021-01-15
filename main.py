@@ -357,26 +357,24 @@ def whereQuery(condition,final_cols):
         
     return res,red
 
-def evaluate_agg(agg_data,data_to_perform,name_of_col) :
-     for i in agg_data.keys():
-            if agg_data[i].lower() == "max" :
-                print ("max(" + str(name_of_col[i]) + ")")
-                print (max(data_to_perform[i]))  
-            elif agg_data[i].lower() == "min" :
-                print ("min(" + str(name_of_col[i])+ ")")
-                print (min(data_to_perform[i]))
 
-            elif agg_data[i].lower() =="avg":
-                print ("avg(" + str(name_of_col[i]) + ")")
-                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i])/float(len(data_to_perform[i])))
+def evaluate_agg(agg_func,data_to_perform) :
+    if agg_func.lower() == "max" :
+        return(max(data_to_perform))  
+    elif agg_func.lower() == "min" :
+        return min(data_to_perform)
 
-            elif agg_data[i].lower() =="count":    
-                print ("count(" + str(name_of_col[i]) + ")")
-                print (len(data_to_perform[i])+1)
+    elif agg_func.lower() =="avg":
+        return reduce(lambda x,y:float(x) + float(y), data_to_perform)/float(len(data_to_perform))
 
-            elif agg_data[i].lower() =="sum":
-                print ("sum(" + str(name_of_col[i]) + ")")
-                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
+    elif agg_func.lower() =="count":    
+        return (len(data_to_perform))
+
+    elif agg_func.lower() =="sum":
+        return (reduce(lambda x,y:float(x) + float(y), data_to_perform))
+    
+            
+
 
 
 
@@ -479,10 +477,28 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
         print("\n\n")
         # print("data to perform ",data_to_perform)   
-        evaluate_agg(agg_data,data_to_perform,name_of_col)
+        # evaluate_agg(agg_data,data_to_perform,name_of_col)
 
 
-       
+        for i in agg_data.keys():
+            if agg_data[i].lower() == "max" :
+                print ("max(" + str(name_of_col[i]) + ")")
+                print (max(data_to_perform[i]))  
+            elif agg_data[i].lower() == "min" :
+                print ("min(" + str(name_of_col[i])+ ")")
+                print (min(data_to_perform[i]))
+
+            elif agg_data[i].lower() =="avg":
+                print ("avg(" + str(name_of_col[i]) + ")")
+                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i])/float(len(data_to_perform[i])))
+
+            elif agg_data[i].lower() =="count":    
+                print ("count(" + str(name_of_col[i]) + ")")
+                print (len(data_to_perform[i])+1)
+
+            elif agg_data[i].lower() =="sum":
+                print ("sum(" + str(name_of_col[i]) + ")")
+                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
             
 
 
@@ -499,9 +515,20 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
     #     print ("sum(" + str(name_of_col)[1:-1] + ")")
     #     print (reduce(lambda x,y:float(x) + float(y), diaplay_data))
     
+def get_data_to_perform(rows,col) :
+    data=[]
+    global cartesianTable
+
+    for i in rows:
+        data.append(cartesianTable[i][col])
+
+    return data    
+
+
+
 def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
     global  cartesianTable
-    print(" columns_to_display in group query ",columns_to_display )
+    
     print("grou_by col ",grp_by_col)
     grp_by_col_num=findColNum(grp_by_col,final_cols)
     print(" grp_by_col_num ",grp_by_col_num)
@@ -523,7 +550,29 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
         group_dict[cartesianTable[i][grp_by_col_num]].append(i)
 
     print(" group_dict ",group_dict)    
+    columns_to_display = columns_to_display.replace(",", " ")
+    columns_to_display = columns_to_display.split()
     agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
+    
+    print(" columns_to_display in group query ",columns_to_display )
+    print("agg data in grp query ",agg_data)
+
+   
+    
+    for i in group_dict.keys() :
+        print_data=str(i)
+
+        for j in agg_data.keys():
+            t=findColNum(columns_to_display[j],final_cols)
+            # print(" t ",t)
+            data_to_perform=get_data_to_perform(group_dict[i],t)
+            # print("data to perform  ",data_to_perform)
+            ans=evaluate_agg(agg_data[j],data_to_perform)
+            # print(" ans ",ans)
+            print_data+= " " +str(ans)
+        print("print_data ",print_data)    
+
+
 
 
 
@@ -621,7 +670,9 @@ def selectQuery(querybits):
 
 
     # print (columns_to_display)
-    projectColumns(columns_to_display, res, dist, redundant,final_cols)
+    if(groupby != 1) :
+
+        projectColumns(columns_to_display, res, dist, redundant,final_cols)
 
 
 def processQuery(raw_query):
