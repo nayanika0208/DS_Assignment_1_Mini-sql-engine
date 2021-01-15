@@ -10,7 +10,7 @@ META = './files/metadata.txt'
 tables_list = {}            #dictionary of table name to list of columns it has
 tables_needed = {}
 
-AGG = [ 'max', 'min', 'avg','sum']
+AGG = [ 'max', 'min', 'avg','sum' ,'count']
 
 cartesianTable = []             #joined table of cartesian product of all rows of tables being used in the query
                 
@@ -127,21 +127,30 @@ def checkAggregate(agg_part):
    
     col_start = -1
     agg = -1
-    col_name = re.search(r"\(([A-Za-z0-9_]+)\)", agg_part[0])
-    # if(agg_part > 1)
-    # print("col_name  ",agg_part)
+    agg_data={}
+    print("\n\n")
+    for i in range(len(agg_part)):
+        col_name = re.search(r"\(([A-Za-z0-9_]+)\)", agg_part[i])
+             # if(agg_part > 1)
+        print("col_name  ",col_name)
 
-    for i in range(len(AGG)):
-        if AGG[i] in agg_part[0].lower():
-            agg=i+1
+        for j in range(len(AGG)):
+            if AGG[j] in agg_part[i].lower():
+                agg=1
+                agg_data[i]=AGG[j]
 
-    if(agg !=-1) :
-        agg_part[0]=col_name.group(1) 
-            
-     
+        if(agg !=-1) :
+            agg_part[i]=col_name.group(1) 
+
+
+   
+    
+    print("agg_ data ",agg_data)
+    print("agg_part ",agg_part)       
+    print("\n\n")
     # print("agg ",agg)      
           
-    return agg, agg_part
+    return agg,agg_data, agg_part
 
 def operator_evaluate(operand1,operand2,identifier1,identifier2,row_no,operator):
     global cartesianTable
@@ -208,7 +217,7 @@ def preEvaluate(cond,final_cols):
     return finalRows
 
 
-def checkJoin(cond,final_cols):
+def get_redundant_rows(cond,final_cols):
     print("\n\n ")
     print("check join condition ",cond)
     redundant = []
@@ -279,6 +288,9 @@ def get_condition_array(condition,index):
     # print("condition_array[i] ",condition_array[i])
     return condition_array
    
+# def group_by_function() :
+
+
  
 def whereQuery(condition,final_cols):
     #split on basis of and and or conditions
@@ -308,8 +320,8 @@ def whereQuery(condition,final_cols):
             print("res2 " ,res2)
 
 
-            red1 = set(checkJoin(condition_array[0],final_cols))
-            red2 = set(checkJoin(condition_array[1],final_cols))
+            red1 = set(get_redundant_rows(condition_array[0],final_cols))
+            red2 = set(get_redundant_rows(condition_array[1],final_cols))
             print("red1 " ,red1)
             print("red2 " ,red2)
 
@@ -328,8 +340,8 @@ def whereQuery(condition,final_cols):
             res2 = set(preEvaluate(condition_array[1],final_cols))
             res = res1 & res2
 
-            red1 = set(checkJoin(condition_array[0],final_cols))
-            red2 = set(checkJoin(condition_array[1],final_cols))
+            red1 = set(get_redundant_rows(condition_array[0],final_cols))
+            red2 = set(get_redundant_rows(condition_array[1],final_cols))
             red = red1 | red2
             break
 
@@ -340,10 +352,31 @@ def whereQuery(condition,final_cols):
 
       
         res = set(preEvaluate(condition_array[0],final_cols))
-        red = checkJoin(condition_array[0],final_cols)
+        red = get_redundant_rows(condition_array[0],final_cols)
            
         
     return res,red
+
+def evaluate_agg(agg_data,data_to_perform,name_of_col) :
+     for i in agg_data.keys():
+            if agg_data[i].lower() == "max" :
+                print ("max(" + str(name_of_col[i]) + ")")
+                print (max(data_to_perform[i]))  
+            elif agg_data[i].lower() == "min" :
+                print ("min(" + str(name_of_col[i])+ ")")
+                print (min(data_to_perform[i]))
+
+            elif agg_data[i].lower() =="avg":
+                print ("avg(" + str(name_of_col[i]) + ")")
+                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i])/float(len(data_to_perform[i])))
+
+            elif agg_data[i].lower() =="count":    
+                print ("count(" + str(name_of_col[i]) + ")")
+                print (len(data_to_perform[i])+1)
+
+            elif agg_data[i].lower() =="sum":
+                print ("sum(" + str(name_of_col[i]) + ")")
+                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
 
 
 
@@ -363,7 +396,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
  
     # print ("query colums in project colms",columns_to_display)
 
-    agg,  columns_to_display  = checkAggregate(columns_to_display)
+    agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
 
     for i in range(len(columns_to_display)):
         check_col(columns_to_display[i])
@@ -379,6 +412,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
         temp_name_of_col.append(temp_col_name[index_of_col[-1]])
         # print("col name ",name_of_col)
         # print("col index ",index_of_col)
+    print("name of col ",name_of_col)    
     if distinct:
         diaplay_data = set()
 
@@ -422,27 +456,80 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
     #     for i in range(len(data)):
     #         diaplay_data.append(str(data[i][ind]))
-
-    # print(" display data ",diaplay_data)
+    print("\n\n")
+    print(" display data ",diaplay_data)
     if agg == -1:
         print (str(temp_name_of_col)[1:-1])
         for i in diaplay_data:
             print (i)
+    else :
+        agg_d_keys=list(agg_data.keys())
+        print("aggr data keys ",agg_d_keys)
+        data_to_perform={}
+        for k in agg_d_keys :
+            data_to_perform[k]=[]
+        for i in diaplay_data : 
+            for j in agg_d_keys :
+                temp=i.split(",")
+                # print("temp ",temp )
+                # print("i ",i,"   j ",j)
+
+                # print("i[j]",temp[int(j)])
+                data_to_perform[j].append(int(temp[int(j)]))
+
+        print("\n\n")
+        # print("data to perform ",data_to_perform)   
+        evaluate_agg(agg_data,data_to_perform,name_of_col)
 
 
-    elif agg == 1:
-        print ("max(" + str(name_of_col)[1:-1] + ")")
-        print (max(diaplay_data))
-    elif agg == 2:
-        print ("min(" + str(name_of_col)[1:-1] + ")")
-        print (min(diaplay_data))
-    elif agg == 3:
-        print ("avg(" + str(name_of_col)[1:-1] + ")")
-        print (reduce(lambda x,y:float(x) + float(y), diaplay_data)/float(len(diaplay_data)))
-    elif agg == 4:
-        print ("sum(" + str(name_of_col)[1:-1] + ")")
-        print (reduce(lambda x,y:float(x) + float(y), diaplay_data))
+       
+            
+
+
+    # elif agg == 1:
+    #     print ("max(" + str(name_of_col)[1:-1] + ")")
+    #     print (max(diaplay_data))
+    # elif agg == 2:
+    #     print ("min(" + str(name_of_col)[1:-1] + ")")
+    #     print (min(diaplay_data))
+    # elif agg == 3:
+    #     print ("avg(" + str(name_of_col)[1:-1] + ")")
+    #     print (reduce(lambda x,y:float(x) + float(y), diaplay_data)/float(len(diaplay_data)))
+    # elif agg == 4:
+    #     print ("sum(" + str(name_of_col)[1:-1] + ")")
+    #     print (reduce(lambda x,y:float(x) + float(y), diaplay_data))
     
+def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
+    global  cartesianTable
+    print(" columns_to_display in group query ",columns_to_display )
+    print("grou_by col ",grp_by_col)
+    grp_by_col_num=findColNum(grp_by_col,final_cols)
+    print(" grp_by_col_num ",grp_by_col_num)
+
+    group_dict={} #dictionary of grp_by_col data to rows 
+
+    data=[]
+    for i in rows:
+    
+            data.append(cartesianTable[i][grp_by_col_num])
+
+    print(" data " ,data)    
+    data=set(data)
+
+    for i in data :
+        group_dict[i]=[]
+    
+    for i in rows:
+        group_dict[cartesianTable[i][grp_by_col_num]].append(i)
+
+    print(" group_dict ",group_dict)    
+    agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
+
+
+
+        
+
+    #check error columns to dsplay and grp_by_col
 
 def selectQuery(querybits):
     global tables_list
@@ -497,11 +584,24 @@ def selectQuery(querybits):
     redundant = set()
    
     #first check for where query
-    for i in querybits:
-        if  i.split()[0].lower() in ["where"] :
-             res, redundant = whereQuery(i,final_cols)
+    for i in range(len(querybits)):
+        if  querybits[i].split()[0].lower() in ["where"] :
+             res, redundant = whereQuery(querybits[i],final_cols)
+
+        if querybits[i] == "group by" :
+            # print("querybits [i ] ",querybits[i])
+            groupby=1
+            try :
+                # print(" querybits [i+ 1]",querybits[i+1])
+                groupQuery(querybits[i+1],res,redundant,final_cols,columns_to_display)
+                # print("no eroorrrrrrrrr")
+            except :
+                print(" error in quryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+                     
+
 
      
+
 
     print(" results ",res)
 
@@ -545,7 +645,7 @@ def processQuery(raw_query):
             querybits.append(str(cmd))
 
         if querybits[0].lower() in ["select"]:           
-            # print("querybits ",querybits)            
+            print("querybits ",querybits)            
             selectQuery(querybits)
         else:
             print ("Incorrect Query type")

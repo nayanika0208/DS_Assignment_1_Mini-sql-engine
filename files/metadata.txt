@@ -1,7 +1,7 @@
 <begin_table>
 table1
-A
-B
+Aplle
+Banana
 C
 <end_table>
 <begin_table>
@@ -11,8 +11,8 @@ E
 <end_table>
 <begin_table>
 table3
-F
-G
+Fish
+Guu
 H
 <end_table>
 <begin_table>
