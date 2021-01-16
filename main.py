@@ -402,6 +402,19 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
     agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
 
+    try :
+        order_by_col_no = findColNum(orderbycol,final_cols)
+        if orderby == -1 :
+            cartesianTable=sorted(cartesianTable, key=lambda x: int(x[order_by_col_no]),reverse=True) 
+
+        elif orderby==1 :
+            cartesianTable=sorted(cartesianTable, key=lambda x: int(x[order_by_col_no])) 
+    except :
+        print("error in order by ")
+             
+
+
+
     for i in range(len(columns_to_display)):
         check_col(columns_to_display[i])
         temp = findColNum(columns_to_display[i],final_cols)
