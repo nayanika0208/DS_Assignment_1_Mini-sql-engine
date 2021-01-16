@@ -18,6 +18,8 @@ tables = {}                     #dictionary of table name to Table object with n
                 #list of all columns in order of cartesian product for all tables
 temp_col_name=[]
 
+
+
 class Table:
     def __init__(self, name, cols, data):
         self.name = name
@@ -121,6 +123,7 @@ def getTablename(col):
         if col in tables[i].columns:
             return str(i)
 
+
 def checkAggregate(agg_part):
     global AGG
     # print(" query list ",agg_part)
@@ -138,9 +141,12 @@ def checkAggregate(agg_part):
             if AGG[j] in agg_part[i].lower():
                 agg=1
                 agg_data[i]=AGG[j]
-
-        if(agg !=-1) :
-            agg_part[i]=col_name.group(1) 
+        try:
+            if(agg !=-1) :
+                agg_part[i]=col_name.group(1) 
+        except :
+            col_name=agg_part[i]
+                
 
 
    
@@ -378,7 +384,7 @@ def evaluate_agg(agg_func,data_to_perform) :
 
 
 
-def projectColumns(columns_to_display, table_cols, distinct, redundant,final_cols):
+def projectColumns(columns_to_display, table_cols, distinct, redundant,final_cols,orderby,orderbycol):
     global cartesianTable
     global tables
     global tables_list
@@ -415,27 +421,25 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
         diaplay_data = set()
 
         for i in range(len(cartesianTable)):
-            row = ""
+            row = []
             if i in table_cols:
                 for j in range(len(index_of_col)):
-                    if j == len(index_of_col) - 1:
-                        row += str(cartesianTable[i][index_of_col[j]])
-                    else:
-                        row += str(cartesianTable[i][index_of_col[j]]) + ", "
-            if row != "":
+                    
+                    row.append( cartesianTable[i][index_of_col[j]]) 
+                    
+            if len(row)>0:
                 diaplay_data.add(row)
     else:
         diaplay_data = []
 
         for i in range(len(cartesianTable)):
-            row = ""
+            row = []
             if i in table_cols:
                 for j in range(len(index_of_col)):
-                    if j == len(index_of_col) - 1:
-                        row += str(cartesianTable[i][index_of_col[j]])
-                    else:
-                        row += str(cartesianTable[i][index_of_col[j]]) + ", "
-            if row != "":
+                     row.append( cartesianTable[i][index_of_col[j]]) 
+                    
+                   
+            if len(row)>0:
                 diaplay_data.append(row)
 
                  
@@ -455,12 +459,14 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
     #     for i in range(len(data)):
     #         diaplay_data.append(str(data[i][ind]))
     print("\n\n")
-    print(" display data ",diaplay_data)
+    # print(" display data ",diaplay_data)
     if agg == -1:
         print (str(temp_name_of_col)[1:-1])
         for i in diaplay_data:
             print (i)
     else :
+
+
         agg_d_keys=list(agg_data.keys())
         print("aggr data keys ",agg_d_keys)
         data_to_perform={}
@@ -468,12 +474,12 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
             data_to_perform[k]=[]
         for i in diaplay_data : 
             for j in agg_d_keys :
-                temp=i.split(",")
+                # temp=i.split(",")
                 # print("temp ",temp )
                 # print("i ",i,"   j ",j)
 
                 # print("i[j]",temp[int(j)])
-                data_to_perform[j].append(int(temp[int(j)]))
+                data_to_perform[j].append(int(i[int(j)]))
 
         print("\n\n")
         # print("data to perform ",data_to_perform)   
@@ -502,18 +508,6 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
             
 
 
-    # elif agg == 1:
-    #     print ("max(" + str(name_of_col)[1:-1] + ")")
-    #     print (max(diaplay_data))
-    # elif agg == 2:
-    #     print ("min(" + str(name_of_col)[1:-1] + ")")
-    #     print (min(diaplay_data))
-    # elif agg == 3:
-    #     print ("avg(" + str(name_of_col)[1:-1] + ")")
-    #     print (reduce(lambda x,y:float(x) + float(y), diaplay_data)/float(len(diaplay_data)))
-    # elif agg == 4:
-    #     print ("sum(" + str(name_of_col)[1:-1] + ")")
-    #     print (reduce(lambda x,y:float(x) + float(y), diaplay_data))
     
 def get_data_to_perform(rows,col) :
     data=[]
@@ -526,12 +520,21 @@ def get_data_to_perform(rows,col) :
 
 
 
-def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
+def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,orderbycol) :
     global  cartesianTable
     
     print("grou_by col ",grp_by_col)
     grp_by_col_num=findColNum(grp_by_col,final_cols)
     print(" grp_by_col_num ",grp_by_col_num)
+    print("orderbycol ",orderbycol)
+
+    if orderby != 0 :
+        if orderbycol != grp_by_col :
+            print(" error in query ")
+            exit(-1)
+
+
+
 
     group_dict={} #dictionary of grp_by_col data to rows 
 
@@ -540,7 +543,7 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
     
             data.append(cartesianTable[i][grp_by_col_num])
 
-    print(" data " ,data)    
+    # print(" data " ,data)    
     data=set(data)
 
     for i in data :
@@ -548,34 +551,73 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display) :
     
     for i in rows:
         group_dict[cartesianTable[i][grp_by_col_num]].append(i)
-
-    print(" group_dict ",group_dict)    
+    print("coming here 1") 
+    # print(" group_dict ",group_dict)    
     columns_to_display = columns_to_display.replace(",", " ")
     columns_to_display = columns_to_display.split()
-    agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
+
+    for i in range(len(columns_to_display)) :
+        if(columns_to_display[i] == grp_by_col) :
+            index_grp_by_col=i
+
+
+    agg, agg_data, columns_to_display_dup  = checkAggregate(columns_to_display)
     
-    print(" columns_to_display in group query ",columns_to_display )
+    print(" columns_to_display_dup in group query ",columns_to_display_dup )
     print("agg data in grp query ",agg_data)
 
    
+    print_data_list=[]
     
     for i in group_dict.keys() :
-        print_data=str(i)
+        print_data=[]
+        
+        print_data.append(i)
+
+        
 
         for j in agg_data.keys():
-            t=findColNum(columns_to_display[j],final_cols)
+            t=findColNum(columns_to_display_dup[j],final_cols)
             # print(" t ",t)
             data_to_perform=get_data_to_perform(group_dict[i],t)
             # print("data to perform  ",data_to_perform)
             ans=evaluate_agg(agg_data[j],data_to_perform)
             # print(" ans ",ans)
-            print_data+= " " +str(ans)
-        print("print_data ",print_data)    
+            print_data.append(ans)
+        # print("print_data ",print_data)  
+        print_data_list.append(print_data)  
+
+    print("coming here 2")    
+    if orderby == -1 :
+        print_data_list=sorted(print_data_list, key=lambda x: int(x[0]),reverse=True) 
+
+    elif orderby==1 :
+        print_data_list=sorted(print_data_list, key=lambda x: int(x[0]))   
+
+
+     
+
+    print(" \n \n \n ")
+    print(columns_to_display)
+    for i in print_data_list:
+        if index_grp_by_col :
+            i[0], i[index_grp_by_col] = i[index_grp_by_col], i[0] 
+            print(i)
+        else :
+            print(i[1:])
+            
+       
+        
+        
+           
+
+        
+
+    print(" \n \n \n ")    
 
 
 
-
-
+#select A,B fro
         
 
     #check error columns to dsplay and grp_by_col
@@ -631,18 +673,37 @@ def selectQuery(querybits):
     res = [x for x in range(len(cartesianTable))]
     # print('result ',res)
     redundant = set()
-   
+    groupby=0
+    orderby=0;
+    orderbycol=""
     #first check for where query
+
+    for i in range(len(querybits)):
+         if querybits[i].lower() == "order by"    : 
+            orderby=1
+            try :
+                temp=querybits[i+1].split()
+                print("temp ",temp)
+                orderbycol=temp[0]
+
+                if len(temp) >1 :
+                    if temp[1].lower() =="desc" :
+                            orderby=-1
+
+            except:
+                print("error in order by statement")
+
     for i in range(len(querybits)):
         if  querybits[i].split()[0].lower() in ["where"] :
              res, redundant = whereQuery(querybits[i],final_cols)
 
-        if querybits[i] == "group by" :
+    
+        if querybits[i].lower() == "group by" :
             # print("querybits [i ] ",querybits[i])
             groupby=1
             try :
                 # print(" querybits [i+ 1]",querybits[i+1])
-                groupQuery(querybits[i+1],res,redundant,final_cols,columns_to_display)
+                groupQuery(querybits[i+1],res,redundant,final_cols,columns_to_display,orderby,orderbycol)
                 # print("no eroorrrrrrrrr")
             except :
                 print(" error in quryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
@@ -652,7 +713,7 @@ def selectQuery(querybits):
      
 
 
-    print(" results ",res)
+    # print(" results ",res)
 
     #then check for group query
 
@@ -672,7 +733,7 @@ def selectQuery(querybits):
     # print (columns_to_display)
     if(groupby != 1) :
 
-        projectColumns(columns_to_display, res, dist, redundant,final_cols)
+        projectColumns(columns_to_display, res, dist, redundant,final_cols,orderby,orderbycol)
 
 
 def processQuery(raw_query):
