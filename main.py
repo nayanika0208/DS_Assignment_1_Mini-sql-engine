@@ -50,7 +50,7 @@ def read_metadata(file):
         elif line != "<end_table>":
             tables_list[table_name].append(line)
 
-    print ("table list",tables_list)      
+    # print ("table list",tables_list)      
 
 
 def get_data_columns(table_name):
@@ -131,11 +131,11 @@ def checkAggregate(agg_part):
     col_start = -1
     agg = -1
     agg_data={}
-    print("\n\n")
+    # print("\n\n")
     for i in range(len(agg_part)):
         col_name = re.search(r"\(([A-Za-z0-9_]+)\)", agg_part[i])
              # if(agg_part > 1)
-        print("col_name  ",col_name)
+        # print("col_name  ",col_name)
 
         for j in range(len(AGG)):
             if AGG[j] in agg_part[i].lower():
@@ -151,9 +151,9 @@ def checkAggregate(agg_part):
 
    
     
-    print("agg_ data ",agg_data)
-    print("agg_part ",agg_part)       
-    print("\n\n")
+    # print("agg_ data ",agg_data)
+    # print("agg_part ",agg_part)       
+    # print("\n\n")
     # print("agg ",agg)      
           
     return agg,agg_data, agg_part
@@ -200,7 +200,7 @@ def preEvaluate(cond,final_cols):
     except:
         check_col(arg)
         ind1 = findColNum(arg,final_cols)
-        print("index 1" ,ind1)
+        # print("index 1" ,ind1)
 
     arg2 = cond[2]
     try:
@@ -208,7 +208,7 @@ def preEvaluate(cond,final_cols):
     except:
         check_col(arg2)
         ind2 = findColNum(arg2,final_cols)
-        print("index 2" ,ind2)
+        # print("index 2" ,ind2)
 
 
     finalData = []
@@ -224,8 +224,8 @@ def preEvaluate(cond,final_cols):
 
 
 def get_redundant_rows(cond,final_cols):
-    print("\n\n ")
-    print("check join condition ",cond)
+    # print("\n\n ")
+    # print("check join condition ",cond)
     redundant = []
     operator = cond[1]
     ind1,ind2 = -1,-1
@@ -243,7 +243,7 @@ def get_redundant_rows(cond,final_cols):
         if operator == "=":
             redundant.append(ind2)
             # print (ind2 )
-    print("redundant",redundant)        
+    # print("redundant",redundant)        
     return redundant
 
 
@@ -266,7 +266,7 @@ def get_condition_array(condition,index):
 
     else:
         temp_c=condition
-        print(" temp c" ,"".join(temp_c))
+        # print(" temp c" ,"".join(temp_c))
         condition_array.append("".join(temp_c))
 
        
@@ -280,7 +280,7 @@ def get_condition_array(condition,index):
         temp = [0,0,0]
 
         for op in operator_array:
-            print(" c-op ",op)
+            # print(" c-op ",op)
             if condition_array[i].find(op) !=-1 :
                 cols=condition_array[i].replace(op,",").split(",")
                 # print("cols ",cols)
@@ -305,7 +305,7 @@ def whereQuery(condition,final_cols):
     
     #validate condirion 
 
-    print("condition ",condition)
+    # print("condition ",condition)
 
    
     condition_array = []
@@ -316,20 +316,20 @@ def whereQuery(condition,final_cols):
             two_cond = 1
             condition_array=get_condition_array(condition,c)
 
-            print("condition_array ",condition_array)
+            # print("condition_array ",condition_array)
 
             res1 = set(preEvaluate(condition_array[0],final_cols))
 
             res2 = set(preEvaluate(condition_array[1],final_cols))
-            print("res1 " ,res1)
+            # print("res1 " ,res1)
             res = res1 | res2
-            print("res2 " ,res2)
+            # print("res2 " ,res2)
 
 
             red1 = set(get_redundant_rows(condition_array[0],final_cols))
             red2 = set(get_redundant_rows(condition_array[1],final_cols))
-            print("red1 " ,red1)
-            print("red2 " ,red2)
+            # print("red1 " ,red1)
+            # print("red2 " ,red2)
 
             red = red1 | red2
             break
@@ -339,7 +339,7 @@ def whereQuery(condition,final_cols):
             two_cond = 1
             condition_array=get_condition_array(condition,c)
 
-            print("condition_array ",condition_array)
+            # print("condition_array ",condition_array)
             
 
             res1 = set(preEvaluate(condition_array[0],final_cols))
@@ -354,7 +354,7 @@ def whereQuery(condition,final_cols):
     if two_cond == 0 :
 
         condition_array=get_condition_array(condition,0)
-        print("c_aarray ",condition_array)
+        # print("c_aarray ",condition_array)
 
       
         res = set(preEvaluate(condition_array[0],final_cols))
@@ -429,7 +429,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
         temp_name_of_col.append(temp_col_name[index_of_col[-1]])
         # print("col name ",name_of_col)
         # print("col index ",index_of_col)
-    print("name of col ",name_of_col)    
+    # print("name of col ",name_of_col)    
     if distinct:
         diaplay_data = set()
 
@@ -471,7 +471,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
     #     for i in range(len(data)):
     #         diaplay_data.append(str(data[i][ind]))
-    print("\n\n")
+    # print("\n\n")
     # print(" display data ",diaplay_data)
     if agg == -1:
         print (str(temp_name_of_col)[1:-1])
@@ -481,7 +481,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
 
         agg_d_keys=list(agg_data.keys())
-        print("aggr data keys ",agg_d_keys)
+        # print("aggr data keys ",agg_d_keys)
         data_to_perform={}
         for k in agg_d_keys :
             data_to_perform[k]=[]
@@ -494,33 +494,40 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
                 # print("i[j]",temp[int(j)])
                 data_to_perform[j].append(int(i[int(j)]))
 
-        print("\n\n")
+        # print("\n\n")
         # print("data to perform ",data_to_perform)   
         # evaluate_agg(agg_data,data_to_perform,name_of_col)
 
+        print_data=[]
+        for i in agg_data.keys():
+            print_data.append(str(agg_data[i].lower())+"("+str(name_of_col[i]) + ")")
+
+        
+        print(print_data)
+        print_data=[]
 
         for i in agg_data.keys():
             if agg_data[i].lower() == "max" :
-                print ("max(" + str(name_of_col[i]) + ")")
-                print (max(data_to_perform[i]))  
+                # print ("max(" + str(name_of_col[i]) + ")")
+                print_data.append(max(data_to_perform[i])  )
             elif agg_data[i].lower() == "min" :
-                print ("min(" + str(name_of_col[i])+ ")")
-                print (min(data_to_perform[i]))
+                # print ("min(" + str(name_of_col[i])+ ")")
+                print_data.append(min(data_to_perform[i]))
 
             elif agg_data[i].lower() =="avg":
-                print ("avg(" + str(name_of_col[i]) + ")")
-                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i])/float(len(data_to_perform[i])))
+                # print ("avg(" + str(name_of_col[i]) + ")")
+                print_data.append (reduce(lambda x,y:float(x) + float(y), data_to_perform[i])/float(len(data_to_perform[i])))
 
             elif agg_data[i].lower() =="count":    
-                print ("count(" + str(name_of_col[i]) + ")")
-                print (len(data_to_perform[i])+1)
+                # print ("count(" + str(name_of_col[i]) + ")")
+                print_data.append(len(data_to_perform[i])+1)
 
             elif agg_data[i].lower() =="sum":
-                print ("sum(" + str(name_of_col[i]) + ")")
-                print (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
+                # print ("sum(" + str(name_of_col[i]) + ")")
+                print_data.append (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
             
 
-
+        print(print_data)
     
 def get_data_to_perform(rows,col) :
     data=[]
@@ -536,10 +543,10 @@ def get_data_to_perform(rows,col) :
 def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,orderbycol) :
     global  cartesianTable
     
-    print("grou_by col ",grp_by_col)
+    # print("grou_by col ",grp_by_col)
     grp_by_col_num=findColNum(grp_by_col,final_cols)
-    print(" grp_by_col_num ",grp_by_col_num)
-    print("orderbycol ",orderbycol)
+    # print(" grp_by_col_num ",grp_by_col_num)
+    # print("orderbycol ",orderbycol)
 
     if orderby != 0 :
         if orderbycol != grp_by_col :
@@ -564,7 +571,7 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
     
     for i in rows:
         group_dict[cartesianTable[i][grp_by_col_num]].append(i)
-    print("coming here 1") 
+    # print("coming here 1") 
     # print(" group_dict ",group_dict)    
     columns_to_display = columns_to_display.replace(",", " ")
     columns_to_display = columns_to_display.split()
@@ -576,8 +583,8 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
 
     agg, agg_data, columns_to_display_dup  = checkAggregate(columns_to_display)
     
-    print(" columns_to_display_dup in group query ",columns_to_display_dup )
-    print("agg data in grp query ",agg_data)
+    # print(" columns_to_display_dup in group query ",columns_to_display_dup )
+    # print("agg data in grp query ",agg_data)
 
    
     print_data_list=[]
@@ -600,7 +607,7 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
         # print("print_data ",print_data)  
         print_data_list.append(print_data)  
 
-    print("coming here 2")    
+    # print("coming here 2")    
     if orderby == -1 :
         print_data_list=sorted(print_data_list, key=lambda x: int(x[0]),reverse=True) 
 
@@ -610,10 +617,10 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
 
      
 
-    print(" \n \n \n ")
-    print(columns_to_display)
+    # print(" \n \n \n ")
+    # print(columns_to_display)
     for i in print_data_list:
-        if index_grp_by_col :
+        if index_grp_by_col >=0:
             i[0], i[index_grp_by_col] = i[index_grp_by_col], i[0] 
             print(i)
         else :
@@ -626,7 +633,7 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
 
         
 
-    print(" \n \n \n ")    
+    # print(" \n \n \n ")    
 
 
 
@@ -696,7 +703,7 @@ def selectQuery(querybits):
             orderby=1
             try :
                 temp=querybits[i+1].split()
-                print("temp ",temp)
+                # print("temp ",temp)
                 orderbycol=temp[0]
 
                 if len(temp) >1 :
@@ -751,7 +758,7 @@ def selectQuery(querybits):
 
 def processQuery(raw_query):
     queries = sqlparse.split(raw_query)
-    print("queries ",queries)
+    # print("queries ",queries)
     for query in queries:
         if query[-1] != ';':
             print ("Syntax error: SQL command should end with semi colon")
@@ -770,7 +777,7 @@ def processQuery(raw_query):
             querybits.append(str(cmd))
 
         if querybits[0].lower() in ["select"]:           
-            print("querybits ",querybits)            
+            # print("querybits ",querybits)            
             selectQuery(querybits)
         else:
             print ("Incorrect Query type")
