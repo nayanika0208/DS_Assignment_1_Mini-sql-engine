@@ -125,36 +125,46 @@ def getTablename(col):
 
 
 def checkAggregate(agg_part):
+    global temp_col_name
     global AGG
     # print(" query list ",agg_part)
    
     col_start = -1
     agg = -1
     agg_data={}
+    temp=-1
     # print("\n\n")
     for i in range(len(agg_part)):
-        col_name = re.search(r"\(([A-Za-z0-9_]+)\)", agg_part[i])
-             # if(agg_part > 1)
-        # print("col_name  ",col_name)
+        col_name = re.search(r"\(([A-Za-z0-9\*_]+)\)", agg_part[i])
 
+             # if(agg_part > 1)
+       
+        # print("col_name 1 ",col_name)
         for j in range(len(AGG)):
             if AGG[j] in agg_part[i].lower():
                 agg=1
                 agg_data[i]=AGG[j]
+                temp=1
         try:
             if(agg !=-1) :
                 agg_part[i]=col_name.group(1) 
+            agg=-1  
+
         except :
-            col_name=agg_part[i]
+                col_name=agg_part[i]
+               
                 
 
 
-   
+    # print("agg_part ",agg_part)  
+    # print("final_cols ",temp_col_name)
     
     # print("agg_ data ",agg_data)
-    # print("agg_part ",agg_part)       
+          
     # print("\n\n")
-    # print("agg ",agg)      
+    # print("agg ",agg)  
+
+
           
     return agg,agg_data, agg_part
 
@@ -378,6 +388,9 @@ def evaluate_agg(agg_func,data_to_perform) :
 
     elif agg_func.lower() =="sum":
         return (reduce(lambda x,y:float(x) + float(y), data_to_perform))
+    else :
+        print("error")
+        
     
             
 
@@ -400,7 +413,10 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
  
     # print ("query colums in project colms",columns_to_display)
 
+    print("final_cols" ,final_cols)
     agg, agg_data, columns_to_display  = checkAggregate(columns_to_display)
+    # for i in columns_to_display :
+    #     if i not in 
 
     try :
         order_by_col_no = findColNum(orderbycol,final_cols)
@@ -410,38 +426,68 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
         elif orderby==1 :
             cartesianTable=sorted(cartesianTable, key=lambda x: int(x[order_by_col_no])) 
     except :
-        print("error in order by ")
+        print("error in query")
+        sys.exit(0)
              
 
 
 
     for i in range(len(columns_to_display)):
-        check_col(columns_to_display[i])
-        temp = findColNum(columns_to_display[i],final_cols)
-        # print("temp ",temp)
+        print("i ",columns_to_display[i])
+        if columns_to_display[i] == "*" :
+                
+                temp = 0
+                index_of_col.append(temp)
+                # print (index_of_col)
+                name_of_col.append(final_cols[index_of_col[-1]])
+                temp_name_of_col.append(temp_col_name[index_of_col[-1]])
 
-        if temp in redundant:
-            # print (redundant, temp)
-            continue
-        index_of_col.append(temp)
-        # print (index_of_col)
-        name_of_col.append(final_cols[index_of_col[-1]])
-        temp_name_of_col.append(temp_col_name[index_of_col[-1]])
+        
+        else:
+            check_col(columns_to_display[i])
+            temp = findColNum(columns_to_display[i],final_cols)
+            # print("temp ",temp)
+
+            if temp in redundant:
+                # print (redundant, temp)
+                continue
+            index_of_col.append(temp)
+            # print (index_of_col)
+            name_of_col.append(final_cols[index_of_col[-1]])
+            temp_name_of_col.append(temp_col_name[index_of_col[-1]])
+
+        
+
+            
         # print("col name ",name_of_col)
         # print("col index ",index_of_col)
     # print("name of col ",name_of_col)    
     if distinct:
-        diaplay_data = set()
+        diaplay_data  =[]
+        diaplay_data_dup=set()
+
 
         for i in range(len(cartesianTable)):
             row = []
+            row_dup=""
             if i in table_cols:
                 for j in range(len(index_of_col)):
+                    if j == len(index_of_col) - 1:
+                        row_dup += str(cartesianTable[i][index_of_col[j]])
+                        row.append( cartesianTable[i][index_of_col[j]]) 
+                    else:
+                        row_dup+= str(cartesianTable[i][index_of_col[j]]) + ", "
+                        row.append( cartesianTable[i][index_of_col[j]]) 
                     
-                    row.append( cartesianTable[i][index_of_col[j]]) 
+                    
+                    
                     
             if len(row)>0:
-                diaplay_data.add(row)
+                if(row_dup not in diaplay_data_dup):
+                    diaplay_data.append(row)
+                    diaplay_data_dup.add(row_dup)
+
+                
     else:
         diaplay_data = []
 
@@ -454,8 +500,7 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
                    
             if len(row)>0:
                 diaplay_data.append(row)
-
-                 
+         
     # else:
     #     diaplay_data = []
     #     k = list(tables.keys())
@@ -500,7 +545,8 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
 
         print_data=[]
         for i in agg_data.keys():
-            print_data.append(str(agg_data[i].lower())+"("+str(name_of_col[i]) + ")")
+            
+            print_data.append(str(agg_data[i].lower())+"("+str(columns_to_display[i]) + ")")
 
         
         print(print_data)
@@ -525,6 +571,9 @@ def projectColumns(columns_to_display, table_cols, distinct, redundant,final_col
             elif agg_data[i].lower() =="sum":
                 # print ("sum(" + str(name_of_col[i]) + ")")
                 print_data.append (reduce(lambda x,y:float(x) + float(y), data_to_perform[i]))
+            else :
+                print("erooor")
+                
             
 
         print(print_data)
@@ -576,12 +625,20 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
     columns_to_display = columns_to_display.replace(",", " ")
     columns_to_display = columns_to_display.split()
 
+    print_cols=copy.deepcopy(columns_to_display)
+
     for i in range(len(columns_to_display)) :
         if(columns_to_display[i] == grp_by_col) :
             index_grp_by_col=i
 
 
     agg, agg_data, columns_to_display_dup  = checkAggregate(columns_to_display)
+
+    for i in columns_to_display:
+        if i not in final_cols :
+            print("Error:Query not Valid")
+            exit(-1)
+   
     
     # print(" columns_to_display_dup in group query ",columns_to_display_dup )
     # print("agg data in grp query ",agg_data)
@@ -619,17 +676,35 @@ def groupQuery(grp_by_col,rows,redundant,final_cols,columns_to_display,orderby,o
 
     # print(" \n \n \n ")
     # print(columns_to_display)
+    print(print_cols)
     for i in print_data_list:
         if index_grp_by_col >=0:
-            i[0], i[index_grp_by_col] = i[index_grp_by_col], i[0] 
+            #have to change the pattern
+            if index_grp_by_col == len(i)-1 :
+                temp=i[:]
+            else :
+                temp=i[:index_grp_by_col+1]
+
+            temp=temp[1:] + temp[0:1]   
+
+            # print("temp ",temp) 
+
+            if index_grp_by_col == len(i)-1 :
+                temp2=temp
+            else :
+                temp2=temp+i[index_grp_by_col+1:]  
+
+
+           
+                     
+
+            i=copy.deepcopy(temp2)
             print(i)
         else :
             print(i[1:])
             
        
-        
-        
-           
+
 
         
 
@@ -726,7 +801,9 @@ def selectQuery(querybits):
                 groupQuery(querybits[i+1],res,redundant,final_cols,columns_to_display,orderby,orderbycol)
                 # print("no eroorrrrrrrrr")
             except :
-                print(" error in quryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+                # print(" error in quryyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy")
+                print("Error:Query not Valid")
+                exit(-1)
                      
 
 
@@ -750,7 +827,7 @@ def selectQuery(querybits):
                     columns_to_display += ( str(tables_list[x][j]) + ",")
 
 
-    # print (columns_to_display)
+   
     if(groupby != 1) :
 
         projectColumns(columns_to_display, res, dist, redundant,final_cols,orderby,orderbycol)
@@ -777,7 +854,7 @@ def processQuery(raw_query):
             querybits.append(str(cmd))
 
         if querybits[0].lower() in ["select"]:           
-            # print("querybits ",querybits)            
+            print("querybits ",querybits)            
             selectQuery(querybits)
         else:
             print ("Incorrect Query type")
